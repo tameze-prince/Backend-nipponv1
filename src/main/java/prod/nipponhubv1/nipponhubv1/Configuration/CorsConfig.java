@@ -24,7 +24,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 String origins = allowedOrigins == null || allowedOrigins.isBlank()
-                    ? "*"
+                    ? "https://front-end-nipponv1.vercel.app/"
                     : allowedOrigins;
                 registry.addMapping("/**")
                     .allowedOriginPatterns(origins.equals("*") ? "*" : origins)

@@ -7,6 +7,8 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+.Dockerfile
+
 ### STS ###
 .apt_generated
 .classpath
