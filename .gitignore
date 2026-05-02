@@ -39,3 +39,4 @@ build/
 /docs
 
 .env
+.m2/repository/

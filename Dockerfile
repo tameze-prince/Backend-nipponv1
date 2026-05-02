@@ -1,49 +1,33 @@
-# Stage 1: Build the application
-FROM maven:3.9-eclipse-temurin-21 AS builder
+# syntax=docker/dockerfile:1.7
+
+FROM maven:3.9-eclipse-temurin-17 AS builder
 
 WORKDIR /build
 
-# Copy pom.xml and download dependencies
 COPY pom.xml .
-RUN mvn dependency:resolve
+RUN mvn -B -q dependency:go-offline
 
-# Copy source code and build
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn -B -q -DskipTests package
 
-# Stage 2: Create optimized runtime image
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-# Install dumb-init for proper signal handling
 RUN apk add --no-cache dumb-init
 
-# Copy the built JAR from builder
 COPY --from=builder /build/target/*.jar app.jar
 
-# Create non-root user for security
-RUN addgroup -g 1001 -S appuser && adduser -u 1001 -S appuser -G appuser
+RUN addgroup -g 1001 -S appuser \
+    && adduser -u 1001 -S appuser -G appuser
 USER appuser
 
-# Expose port
+ENV JAVA_OPTS="-XX:+UseG1GC -XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0 -XX:+UseStringDeduplication -XX:+ParallelRefProcEnabled -Dfile.encoding=UTF-8"
+
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD java -cp app.jar org.springframework.boot.loader.JarLauncher org.springframework.boot.actuate.health.Health || exit 1
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider "http://127.0.0.1:${PORT:-8080}/actuator/health" || exit 1
 
-# Use dumb-init to handle signals properly
 ENTRYPOINT ["/sbin/dumb-init", "--"]
-
-# Start application with optimized JVM settings
-CMD ["java", \
-     "-XX:+UseG1GC", \
-     "-XX:MaxRAMPercentage=75.0", \
-     "-XX:InitialRAMPercentage=25.0", \
-     "-XX:+UseStringDeduplication", \
-     "-XX:+ParallelRefProcEnabled", \
-     "-Dfile.encoding=UTF-8", \
-     "-Dspring.profiles.active=prod", \
-     "-jar", \
-     "app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod} -jar app.jar"]

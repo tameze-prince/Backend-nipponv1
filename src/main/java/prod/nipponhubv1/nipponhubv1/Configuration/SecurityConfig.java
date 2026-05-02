@@ -70,6 +70,7 @@ public class SecurityConfig {
                 // ── PUBLIC ─────────────────────────────────────────────────
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/**").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
 
                 .requestMatchers(HttpMethod.GET,  "/api/v1/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET,  "/api/v1/categories/**").permitAll()

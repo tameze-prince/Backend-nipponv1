@@ -7,6 +7,8 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Arrays;
+
 
 /**
  * CORS — dev : tous les origines acceptés.
@@ -24,14 +26,19 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 String origins = allowedOrigins == null || allowedOrigins.isBlank()
-                    ? "https://front-end-nipponv1.vercel.app/"
+                    ? "https://front-end-nipponv1.vercel.app"
                     : allowedOrigins;
+                String[] originPatterns = Arrays.stream(origins.split(","))
+                    .map(String::trim)
+                    .filter(origin -> !origin.isBlank())
+                    .toArray(String[]::new);
+
                 registry.addMapping("/**")
-                    .allowedOriginPatterns(origins.equals("*") ? "*" : origins)
+                    .allowedOriginPatterns(originPatterns.length == 0 ? new String[] { "*" } : originPatterns)
                     .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                     .allowedHeaders("*")
                     .exposedHeaders("Authorization", "Retry-After")
-                    .allowCredentials(!origins.equals("*"))
+                    .allowCredentials(!Arrays.asList(originPatterns).contains("*"))
                     .maxAge(3600);
             }
         };
