@@ -14,8 +14,6 @@ FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-RUN apk add --no-cache dumb-init
-
 COPY --from=builder /build/target/*.jar app.jar
 
 RUN addgroup -g 1001 -S appuser \
@@ -29,5 +27,4 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider "http://127.0.0.1:${PORT:-8080}/actuator/health" || exit 1
 
-ENTRYPOINT ["/sbin/dumb-init", "--"]
-CMD ["sh", "-c", "java $JAVA_OPTS -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod} -jar app.jar"]
+CMD ["sh", "-c", "java $JAVA_OPTS -Dspring.boot.server.port=${PORT:-8080} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod} -jar app.jar"]
