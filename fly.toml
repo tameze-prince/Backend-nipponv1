@@ -1,0 +1,80 @@
+# fly.toml app configuration generated for NipponHub on fly.io
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+
+app = "nipponhubv1"
+primary_region = "iad"
+
+[build]
+  dockerfile = "./Dockerfile"
+  docker-build-args = {}
+
+[env]
+  SPRING_PROFILES_ACTIVE = "prod"
+  PORT = "8080"
+  JPA_DDL_AUTO = "update"
+  DB_POOL_MAX_SIZE = "5"
+  DB_SSL_MODE = "require"
+  CLOUDINARY_ENABLED = "true"
+  JWT_ACCESS_EXPIRATION = "900000"
+  JWT_REFRESH_EXPIRATION = "604800000"
+  CORS_ORIGINS = "https://front-end-nipponv1.vercel.app"
+
+[[services]]
+  internal_port = 8080
+  processes = ["app"]
+  protocol = "tcp"
+  script_checks = []
+
+  [services.concurrency]
+    hard_limit = 25
+    soft_limit = 20
+    type = "connections"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+    force_https = true
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [[services.tcp_checks]]
+    grace_period = "1s"
+    interval = "15s"
+    timeout = "2s"
+
+  [[services.http_checks]]
+    interval = "10s"
+    grace_period = "30s"
+    method = "get"
+    path = "/actuator/health"
+    protocol = "http"
+    timeout = "5s"
+    tls_skip_verify = false
+    [services.http_checks.headers]
+      User-Agent = "Fly-Health-Check"
+
+[processes]
+  app = "sh -c 'java $JAVA_OPTS -Dspring.boot.server.port=${PORT:-8080} -Dspring.profiles.active=${SPRING_PROFILES_ACTIVE:-prod} -jar app.jar'"
+
+[[vm]]
+  cpus = 1
+  cpus_kind = "shared"
+  memory_mb = 512
+  processes = ["app"]
+
+[deploy]
+  release_command = "bin/migrate"
+  release_command_timeout = "300s"
+  strategy = "rolling"
+  max_unavailable = 0
+
+
+[metrics]
+  path = "/actuator/prometheus"
+  port = 8080
+
+[console]
+  command = "/bin/sh"
+
